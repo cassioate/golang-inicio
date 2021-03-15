@@ -7,21 +7,15 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func ReceberMensagem() ([]byte, error) {
+func ReceberMensagem() error {
 
 	url := os.Getenv("AMQP_URL")
-
 	connection, erro := amqp.Dial(url)
-	if erro != nil {
-		return nil, erro
-	}
+	retornaErro(erro)
 	defer connection.Close()
 
 	channel, erro := connection.Channel()
-	if erro != nil {
-		return nil, erro
-	}
-
+	retornaErro(erro)
 	defer channel.Close()
 
 	messages, erro := channel.Consume(
@@ -33,24 +27,20 @@ func ReceberMensagem() ([]byte, error) {
 		false,
 		nil,
 	)
-	if erro != nil {
-		return nil, erro
+	retornaErro(erro)
+
+	for m := range messages {
+		//Retorna o Body do struct acima que é um []byte
+		SalvarArquivoTxt(m.Body)
 	}
 
-	//Recebe um Struct que contem um BODY
-	message := <-messages
-	SalvarArquivoTxt(message.Body)
-
-	//Retorna o Body do struct acima que é um []byte
-	return message.Body, erro
+	return erro
 }
 
 func SalvarArquivoTxt(message []byte) error {
 
 	os.Chdir(os.Getenv("NOVOS_CLIENTES"))
-
 	fileInfo, erro := os.Stat("cliente.json")
-
 	var arquivo *os.File
 	var novoNomeProArquivo string
 
@@ -66,16 +56,15 @@ func SalvarArquivoTxt(message []byte) error {
 	} else {
 		arquivo, erro = os.OpenFile("cliente.json", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	}
-
-	if erro != nil {
-		return erro
-	}
-
+	retornaErro(erro)
 	arquivo.Write(message)
 	arquivo.Close()
 	return erro
 }
 
-func blockForever() {
-	select {}
+func retornaErro(erro error) error {
+	if erro != nil {
+		return erro
+	}
+	return nil
 }
