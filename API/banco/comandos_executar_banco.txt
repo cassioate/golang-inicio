@@ -1,0 +1,5 @@
+Rodar no CMD:
+
+go run github.com/gosidekick/migration/v3/cmd/migration exec -url "postgres://postgres:kaka18@localhost:5432/Nuveo?sslmode=disable" -dir ./banco/fixtures -action up
+
+go run github.com/gosidekick/migration/v3/cmd/migration exec -url "postgres://postgres:kaka18@localhost:5432/Nuveo?sslmode=disable" -dir ./banco/fixtures -action down
