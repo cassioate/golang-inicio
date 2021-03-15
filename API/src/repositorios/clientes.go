@@ -2,8 +2,11 @@ package repositorios
 
 import (
 	"database/sql"
-	"fmt"
+	"encoding/json"
 	"modulo/src/model"
+	"os"
+
+	"github.com/streadway/amqp"
 )
 
 // Representa um repositorio de cliente
@@ -17,25 +20,30 @@ func NovoRepositorioDeCliente(db *sql.DB) *Cliente {
 }
 
 // Insere um cliente no banco de dados e retorna o ID dele
-func (repositorio Cliente) Criar(cliente model.Cliente) (uint64, error) {
+func (repositorio Cliente) Criar(cliente model.Cliente) (string, error) {
 
 	statement, erro := repositorio.db.Prepare(
-		"insert into cliente (uuid, nome, endereco) values($1, $2, $3) RETURNING uuid",
+		"insert into cliente (uuid, nome, endereco) values($1, $2, $3) RETURNING uuid, nome, endereco, cadastrado_em, atualizado_em",
 	)
 	if erro != nil {
-		return 0, erro
+		return "", erro
 	}
 
 	defer statement.Close()
 
-	var id uint64
-	err := statement.QueryRow(cliente.Uuid, cliente.Nome, cliente.Endereco).Scan(&id)
-	if err != nil {
-		fmt.Println(err.Error())
-		return 0, erro
+	var clienteRetornado model.Cliente
+	erro = statement.QueryRow(cliente.Uuid, cliente.Nome, cliente.Endereco).Scan(&clienteRetornado.Uuid, &clienteRetornado.Nome,
+		&clienteRetornado.Endereco, &clienteRetornado.Cadastrado_em, &clienteRetornado.Atualizado_em)
+	if erro != nil {
+		return "", erro
 	}
 
-	return id, erro
+	erro = enviarRabbitMQ(clienteRetornado)
+	if erro != nil {
+		return "", erro
+	}
+
+	return clienteRetornado.Uuid, erro
 }
 
 // Busca todos os clientes
@@ -131,6 +139,46 @@ func (repositorio Cliente) Deletar(Id uint64) error {
 	if err != nil {
 		return erro
 	}
+
+	return erro
+}
+
+func enviarRabbitMQ(cliente model.Cliente) error {
+
+	url := os.Getenv("AMQP_URL")
+
+	connection, erro := amqp.Dial(url)
+	if erro != nil {
+		return erro
+	}
+	defer connection.Close()
+
+	channel, erro := connection.Channel()
+	if erro != nil {
+		return erro
+	}
+	defer channel.Close()
+
+	_, erro = channel.QueueDeclare(
+		"Queue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	json, erro := json.Marshal(cliente)
+	if erro != nil {
+		return erro
+	}
+
+	message := amqp.Publishing{
+		ContentType: "application/json",
+		Body:        []byte(json),
+	}
+
+	erro = channel.Publish("", "Queue", false, false, message)
 
 	return erro
 }

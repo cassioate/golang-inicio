@@ -6,11 +6,11 @@ import (
 )
 
 type Cliente struct {
-	Uuid          string
-	Nome          string
-	Endereco      string
-	Cadastrado_em string
-	Atualizado_em string
+	Uuid          string `json:"Uuid,omitempty"`
+	Nome          string `json:"Nome,omitempty"`
+	Endereco      string `json:"Endereco,omitempty"`
+	Cadastrado_em string `json:"Cadastrado_em,omitempty"`
+	Atualizado_em string `json:"Atualizado_em,omitempty"`
 }
 
 func (cliente *Cliente) Preparar() error {
