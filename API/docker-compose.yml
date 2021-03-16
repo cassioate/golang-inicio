@@ -1,0 +1,62 @@
+version: '3.7'
+services:
+
+  db:
+    container_name: db
+    image: postgres
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: kaka18
+      POSTGRES_DB: Nuveo
+    volumes: 
+      - ./var/lib/postgresql/data
+    ports: 
+    - "5432:5432"     
+    networks: 
+    - dev-network
+
+  enviador:
+    restart: always
+    build: 
+      dockerfile: ./dockerfile
+      context: .
+    ports: 
+    - "3000:3000"
+    networks: 
+    - dev-network
+    depends_on: 
+    - "rabbitmq"
+    - "db"
+
+  receptor:
+    restart: always
+    build: 
+      dockerfile: dockerfile
+      context: ../ConsumidorRabbitMq
+    volumes: 
+      - ../ConsumidorRabbitMq/:/var
+    ports: 
+    - "5000:5000"
+    networks: 
+    - dev-network
+    depends_on: 
+    - "rabbitmq"
+    - "db"
+    - "enviador"
+
+  rabbitmq:
+    restart: always
+    container_name: some-rabbit
+    image: rabbitmq:3-management
+    volumes: 
+      - ./db-data:/var/lib/rabbitmq
+    ports: 
+      - "15672:15672"
+      - "5672:5672"
+    networks: 
+    - dev-network
+
+
+networks: 
+  dev-network:
+    driver: bridge

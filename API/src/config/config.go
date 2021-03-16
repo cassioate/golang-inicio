@@ -1,11 +1,13 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 
+	"github.com/gosidekick/migration/v3"
 	"github.com/joho/godotenv"
 )
 
@@ -36,4 +38,21 @@ func Carregar() {
 		os.Getenv("DB_PORTA"),
 		os.Getenv("DB_NOME"),
 	)
+
+	err := CarregarTabelas()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func CarregarTabelas() error {
+	quantidade, listaDeTabelasUtilizadas, err := migration.Run(context.Background(), "./banco/fixtures", StringConexaoBanco, "up")
+	if err != nil {
+		return err
+	}
+	if quantidade > 0 {
+		fmt.Printf("Foram realizadas: %d\n", quantidade)
+		fmt.Printf("Foram utilizadas as seguintes tabelas: %s\n", listaDeTabelasUtilizadas)
+	}
+	return nil
 }

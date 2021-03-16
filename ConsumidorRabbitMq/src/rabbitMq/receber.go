@@ -1,6 +1,7 @@
 package rabbitMq
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -32,6 +33,7 @@ func ReceberMensagem() error {
 	for m := range messages {
 		//Retorna o Body do struct acima que é um []byte
 		SalvarArquivoTxt(m.Body)
+		fmt.Println("Arquivo recebido")
 	}
 
 	return erro
