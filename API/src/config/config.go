@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"modulo/src/model"
+	"modulo/src/repositorios"
 	"os"
 	"strconv"
 
@@ -43,6 +45,8 @@ func Carregar() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	repositorios.EnviarRabbitMQ(model.Cliente{})
 }
 
 func CarregarTabelas() error {

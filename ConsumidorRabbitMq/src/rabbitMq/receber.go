@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -11,14 +12,37 @@ import (
 func ReceberMensagem() error {
 
 	url := os.Getenv("AMQP_URL")
-	connection, erro := amqp.Dial(url)
-	retornaErro(erro)
+
+	connection, erro := conectar(url)
 	defer connection.Close()
 
 	channel, erro := connection.Channel()
-	retornaErro(erro)
 	defer channel.Close()
+	retornaErro(erro)
 
+	messages, erro := buscarMensagem(channel)
+	retornaErro(erro)
+
+	for m := range messages {
+		//Retorna o Body do struct acima que é um []byte
+		SalvarArquivoJson(m.Body)
+		fmt.Println("Arquivo recebido")
+	}
+
+	return erro
+}
+
+func conectar(url string) (*amqp.Connection, error) {
+	connection, erro := amqp.Dial(url)
+	for connection == nil {
+		fmt.Println("Aguardando conexão com RabbitMQ")
+		time.Sleep(time.Second * 5)
+		connection, erro = amqp.Dial(url)
+	}
+	return connection, erro
+}
+
+func buscarMensagem(channel *amqp.Channel) (<-chan amqp.Delivery, error) {
 	messages, erro := channel.Consume(
 		"Queue",
 		"",
@@ -28,18 +52,24 @@ func ReceberMensagem() error {
 		false,
 		nil,
 	)
-	retornaErro(erro)
 
-	for m := range messages {
-		//Retorna o Body do struct acima que é um []byte
-		SalvarArquivoTxt(m.Body)
-		fmt.Println("Arquivo recebido")
+	for messages == nil {
+		fmt.Println("Aguardando menssagens")
+		time.Sleep(time.Second * 5)
+		messages, erro = channel.Consume(
+			"Queue",
+			"",
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
 	}
-
-	return erro
+	return messages, erro
 }
 
-func SalvarArquivoTxt(message []byte) error {
+func SalvarArquivoJson(message []byte) error {
 
 	os.Chdir(os.Getenv("NOVOS_CLIENTES"))
 	fileInfo, erro := os.Stat("cliente.json")

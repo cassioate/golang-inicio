@@ -38,7 +38,7 @@ func (repositorio Cliente) Criar(cliente model.Cliente) (string, error) {
 		return "", erro
 	}
 
-	erro = enviarRabbitMQ(clienteRetornado)
+	erro = EnviarRabbitMQ(clienteRetornado)
 	if erro != nil {
 		return "", erro
 	}
@@ -143,7 +143,7 @@ func (repositorio Cliente) Deletar(Id uint64) error {
 	return erro
 }
 
-func enviarRabbitMQ(cliente model.Cliente) error {
+func EnviarRabbitMQ(cliente model.Cliente) error {
 
 	url := os.Getenv("AMQP_URL")
 

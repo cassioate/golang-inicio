@@ -4,6 +4,8 @@ services:
   db:
     container_name: db
     image: postgres
+    healthcheck:
+      test: "exit 0"
     environment: 
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: kaka18
@@ -14,9 +16,16 @@ services:
     - "5432:5432"     
     networks: 
     - dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   enviador:
     restart: always
+    healthcheck:
+      test: "exit 0"
     build: 
       dockerfile: ./dockerfile
       context: .
@@ -25,11 +34,15 @@ services:
     networks: 
     - dev-network
     depends_on: 
-    - "rabbitmq"
-    - "db"
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
   receptor:
     restart: always
+    healthcheck:
+      test: "exit 0"
     build: 
       dockerfile: dockerfile
       context: ../ConsumidorRabbitMq
@@ -40,22 +53,27 @@ services:
     networks: 
     - dev-network
     depends_on: 
-    - "rabbitmq"
-    - "db"
-    - "enviador"
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      enviador:
+        condition: service_healthy
 
   rabbitmq:
     restart: always
     container_name: some-rabbit
     image: rabbitmq:3-management
-    volumes: 
-      - ./db-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics check_port_connectivity"]
+      interval: 50s
+      timeout: 5s
+      retries: 5
     ports: 
       - "15672:15672"
       - "5672:5672"
     networks: 
     - dev-network
-
 
 networks: 
   dev-network:
