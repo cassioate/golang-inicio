@@ -13,6 +13,7 @@ var (
 	Porta = 0
 )
 
+// Carrega as variaveis de ambiente e define o valor da porta
 func Carregar() {
 	var erro error
 

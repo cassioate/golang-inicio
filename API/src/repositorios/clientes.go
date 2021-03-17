@@ -19,7 +19,9 @@ func NovoRepositorioDeCliente(db *sql.DB) *Cliente {
 	return &Cliente{db}
 }
 
-// Insere um cliente no banco de dados e retorna o ID dele
+// Tem a função de realizar a inserção de um Cliente no banco de dados utilizando a Query preparada.
+// Também irá realizar a chamada do metodo que enviará o arquivo que foi salvo no banco de dados em formato
+// Json para a MENSAGERIA
 func (repositorio Cliente) Criar(cliente model.Cliente) (string, error) {
 
 	statement, erro := repositorio.db.Prepare(
@@ -46,7 +48,7 @@ func (repositorio Cliente) Criar(cliente model.Cliente) (string, error) {
 	return clienteRetornado.Uuid, erro
 }
 
-// Busca todos os clientes
+// Tem a função de realizar a Busca todos os Clientes no banco de dados utilizando a Query preparada.
 func (repositorio Cliente) BuscarTodosClientes() ([]model.Cliente, error) {
 
 	linhas, erro := repositorio.db.Query(
@@ -78,8 +80,8 @@ func (repositorio Cliente) BuscarTodosClientes() ([]model.Cliente, error) {
 	return clientes, erro
 }
 
-// Busca os clientes por ID
-func (repositorio Cliente) BuscarClientePorId(Id uint64) (model.Cliente, error) {
+// Tem a função de realizar a Busca por ID no banco de dados utilizando a Query preparada.
+func (repositorio Cliente) BuscarClientePorId(Id string) (model.Cliente, error) {
 
 	linha, erro := repositorio.db.Query(
 		"select * from cliente where uuid = $1",
@@ -106,57 +108,51 @@ func (repositorio Cliente) BuscarClientePorId(Id uint64) (model.Cliente, error) 
 	return cliente, erro
 }
 
-func (repositorio Cliente) Atualizar(Id uint64, cliente model.Cliente) error {
+// Tem a função de realizar a Atualização no banco de dados utilizando a Query preparada.
+func (repositorio Cliente) Atualizar(Id string, cliente model.Cliente) error {
 
 	statement, erro := repositorio.db.Prepare(
 		`update cliente set nome = $1, endereco = $2, atualizado_em = to_char(current_timestamp, 'DD/MM/YYYY HH24:MI:SS') where uuid = $3`,
 	)
-	if erro != nil {
-		return erro
-	}
-
+	seErroRepositorio(erro)
 	defer statement.Close()
 
-	_, err := statement.Exec(cliente.Nome, cliente.Endereco, Id)
-	if err != nil {
-		return erro
-	}
+	_, erro = statement.Exec(cliente.Nome, cliente.Endereco, Id)
+	seErroRepositorio(erro)
+
 	return erro
 }
 
-func (repositorio Cliente) Deletar(Id uint64) error {
+// Tem a função de realizar a Deleção no banco de dados utilizando a Query preparada.
+func (repositorio Cliente) Deletar(Id string) error {
 
 	statement, erro := repositorio.db.Prepare(
 		"delete from cliente where uuid = $1",
 	)
-	if erro != nil {
-		return erro
-	}
+	seErroRepositorio(erro)
 
 	defer statement.Close()
 
-	_, err := statement.Exec(Id)
-	if err != nil {
-		return erro
-	}
+	_, erro = statement.Exec(Id)
+	seErroRepositorio(erro)
 
 	return erro
 }
 
+// Esse metodo possui a obrigação de enviar a mensagem para a MENSAGERIA,
+// permitindo que a fila seja criada e utilizada. Nele é estabelecida uma conexão,
+// um canal e uma fila, ao final ele converte o objeto para um Json e depois publica
+// ele na MENSAGERIA.
 func EnviarRabbitMQ(cliente model.Cliente) error {
 
 	url := os.Getenv("AMQP_URL")
 
 	connection, erro := amqp.Dial(url)
-	if erro != nil {
-		return erro
-	}
+	seErroRepositorio(erro)
 	defer connection.Close()
 
 	channel, erro := connection.Channel()
-	if erro != nil {
-		return erro
-	}
+	seErroRepositorio(erro)
 	defer channel.Close()
 
 	_, erro = channel.QueueDeclare(
@@ -169,9 +165,7 @@ func EnviarRabbitMQ(cliente model.Cliente) error {
 	)
 
 	json, erro := json.Marshal(cliente)
-	if erro != nil {
-		return erro
-	}
+	seErroRepositorio(erro)
 
 	message := amqp.Publishing{
 		ContentType: "application/json",
@@ -181,4 +175,12 @@ func EnviarRabbitMQ(cliente model.Cliente) error {
 	erro = channel.Publish("", "Queue", false, false, message)
 
 	return erro
+}
+
+// Tem a função de encurtar o codigo em caso de erro no controller
+func seErroRepositorio(erro error) error {
+	if erro != nil {
+		return erro
+	}
+	return nil
 }

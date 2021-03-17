@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// configuração das rotas que serão utilizadas para clientes.
 var rotasClientes = []Rota{
 	{
 		Uri:                "/cliente",

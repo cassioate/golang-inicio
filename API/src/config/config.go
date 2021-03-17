@@ -20,7 +20,10 @@ var (
 	Porta = 0
 )
 
-//vai iniciar as variaveis de ambiente
+// Iinicia as variaveis de ambiente e define a porta a ser utilizada, também da inicio ao carregamento das tabelas pelo GoSideKick.
+// Esse metodo também possui a obrigação de enviar a primeira mensagem para a MENSAGERIA, para que assim possa ativar uma fila antes
+// que o serviço que irá receber a mensagem se conecte, permitindo assim que ele ingresse na fila corretamente do outro lado.
+// Evitando que o receptor da mensagem final não consiga ingressar.
 func Carregar() {
 	var erro error
 
@@ -49,6 +52,7 @@ func Carregar() {
 	repositorios.EnviarRabbitMQ(model.Cliente{})
 }
 
+// Carrega as tabelas utilizando o GoSideKick/Migration, informa também quantos e quais foram os arquivos utilizados.
 func CarregarTabelas() error {
 	quantidade, listaDeTabelasUtilizadas, err := migration.Run(context.Background(), "./banco/fixtures", StringConexaoBanco, "up")
 	if err != nil {

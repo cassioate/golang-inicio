@@ -9,6 +9,9 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// Irá estabelecer uma conexão com a MENSAGERIA, então conectará um canal que consome uma Queue(fila)
+// sendo repassada para um for onde toda as mensages recebidas serão interceptadas, em caso de erro elá irá retorna-lo.
+// Uma vez iniciado, ele irá permanecer com a fila aberta recebendo todas as novas mensages em tempo real.
 func ReceberMensagem() error {
 
 	url := os.Getenv("AMQP_URL")
@@ -32,6 +35,7 @@ func ReceberMensagem() error {
 	return erro
 }
 
+// Estabelece conexão com a MENSAGERIA e retorna um erro em caso negativo.
 func conectar(url string) (*amqp.Connection, error) {
 	connection, erro := amqp.Dial(url)
 	for connection == nil {
@@ -42,6 +46,7 @@ func conectar(url string) (*amqp.Connection, error) {
 	return connection, erro
 }
 
+// Busca a fila de mensagens para que possa ser utilizada.
 func buscarMensagem(channel *amqp.Channel) (<-chan amqp.Delivery, error) {
 	messages, erro := channel.Consume(
 		"Queue",
@@ -69,6 +74,11 @@ func buscarMensagem(channel *amqp.Channel) (<-chan amqp.Delivery, error) {
 	return messages, erro
 }
 
+// Salva a mensagem recebida em um arquivo .Json. É definido o diretorio em que será salvo o arquivo,
+// então é verificado se existe algum arquivo com o nome "cliente" caso exista irá criar um "cliente_1",
+// caso exista irá criar "cliente_2" e assim por diante, se utilizando de um for para fazer tal verificação,
+// após isso irá salvar o arquivo no diretorio escolhido.
+// Em caso de erro irá retorna-lo.
 func SalvarArquivoJson(message []byte) error {
 
 	os.Chdir(os.Getenv("NOVOS_CLIENTES"))
@@ -94,6 +104,7 @@ func SalvarArquivoJson(message []byte) error {
 	return erro
 }
 
+// Simplificação de um retorno de erro muito utilzado
 func retornaErro(erro error) error {
 	if erro != nil {
 		return erro
