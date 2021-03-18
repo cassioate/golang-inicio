@@ -16,21 +16,8 @@ import (
 )
 
 func TestCriar(t *testing.T) {
-	if erro := godotenv.Load(); erro != nil {
-		log.Fatal(erro)
-	}
 
-	conexao := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USUARIO_TEST"),
-		os.Getenv("DB_SENHA_TEST"),
-		os.Getenv("DB_HOST_TEST"),
-		os.Getenv("DB_PORTA_TEST"),
-		os.Getenv("DB_NOME_TEST"),
-	)
-
-	db, err := sql.Open("postgres", conexao)
-
-	migration.Run(context.Background(), "./banco/fixtures", conexao, "up")
+	db, err := CarregarTabelas()
 
 	if err != nil {
 		t.Fatalf("Não conseguiu criar um DATABASE %v", err)
@@ -66,21 +53,7 @@ func TestCriar(t *testing.T) {
 
 func TestBuscarTodosClientes(t *testing.T) {
 
-	if erro := godotenv.Load(); erro != nil {
-		log.Fatal(erro)
-	}
-
-	conexao := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USUARIO_TEST"),
-		os.Getenv("DB_SENHA_TEST"),
-		os.Getenv("DB_HOST_TEST"),
-		os.Getenv("DB_PORTA_TEST"),
-		os.Getenv("DB_NOME_TEST"),
-	)
-
-	db, err := sql.Open("postgres", conexao)
-
-	migration.Run(context.Background(), "./banco/fixtures", conexao, "up")
+	db, err := CarregarTabelas()
 
 	if err != nil {
 		t.Fatalf("Não conseguiu criar um DATABASE %v", err)
@@ -100,21 +73,7 @@ func TestBuscarTodosClientes(t *testing.T) {
 
 func TestBuscarClientePorId(t *testing.T) {
 
-	if erro := godotenv.Load(); erro != nil {
-		log.Fatal(erro)
-	}
-
-	conexao := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USUARIO_TEST"),
-		os.Getenv("DB_SENHA_TEST"),
-		os.Getenv("DB_HOST_TEST"),
-		os.Getenv("DB_PORTA_TEST"),
-		os.Getenv("DB_NOME_TEST"),
-	)
-
-	db, err := sql.Open("postgres", conexao)
-
-	migration.Run(context.Background(), "./banco/fixtures", conexao, "up")
+	db, err := CarregarTabelas()
 
 	if err != nil {
 		t.Fatalf("Não conseguiu criar um DATABASE %v", err)
@@ -158,21 +117,7 @@ func TestBuscarClientePorId(t *testing.T) {
 
 func TestAtualizar(t *testing.T) {
 
-	if erro := godotenv.Load(); erro != nil {
-		log.Fatal(erro)
-	}
-
-	conexao := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USUARIO_TEST"),
-		os.Getenv("DB_SENHA_TEST"),
-		os.Getenv("DB_HOST_TEST"),
-		os.Getenv("DB_PORTA_TEST"),
-		os.Getenv("DB_NOME_TEST"),
-	)
-
-	db, err := sql.Open("postgres", conexao)
-
-	migration.Run(context.Background(), "./banco/fixtures", conexao, "up")
+	db, err := CarregarTabelas()
 
 	if err != nil {
 		t.Fatalf("Não conseguiu criar um DATABASE %v", err)
@@ -210,21 +155,7 @@ func TestAtualizar(t *testing.T) {
 
 func TestDeletar(t *testing.T) {
 
-	if erro := godotenv.Load(); erro != nil {
-		log.Fatal(erro)
-	}
-
-	conexao := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USUARIO_TEST"),
-		os.Getenv("DB_SENHA_TEST"),
-		os.Getenv("DB_HOST_TEST"),
-		os.Getenv("DB_PORTA_TEST"),
-		os.Getenv("DB_NOME_TEST"),
-	)
-
-	db, err := sql.Open("postgres", conexao)
-
-	migration.Run(context.Background(), "./banco/fixtures", conexao, "up")
+	db, err := CarregarTabelas()
 
 	if err != nil {
 		t.Fatalf("Não conseguiu criar um DATABASE %v", err)
@@ -252,4 +183,32 @@ func TestDeletar(t *testing.T) {
 
 	defer db.Close()
 
+}
+
+// Carrega as tabelas utilizando o GoSideKick/Migration, informa também quantos e quais foram os arquivos utilizados.
+func CarregarTabelas() (*sql.DB, error) {
+
+	if erro := godotenv.Load(); erro != nil {
+		log.Fatal(erro)
+	}
+
+	conexao := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		os.Getenv("DB_USUARIO_TEST"),
+		os.Getenv("DB_SENHA_TEST"),
+		os.Getenv("DB_HOST_TEST"),
+		os.Getenv("DB_PORTA_TEST"),
+		os.Getenv("DB_NOME_TEST"),
+	)
+
+	db, err := sql.Open("postgres", conexao)
+
+	quantidade, listaDeTabelasUtilizadas, err := migration.Run(context.Background(), "../../banco/fixtures", conexao, "up")
+	if err != nil {
+		return nil, err
+	}
+	if quantidade > 0 {
+		fmt.Printf("Foram realizadas: %d\n", quantidade)
+		fmt.Printf("Foram utilizadas as seguintes tabelas: %s\n", listaDeTabelasUtilizadas)
+	}
+	return db, err
 }
