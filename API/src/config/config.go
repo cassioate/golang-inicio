@@ -15,7 +15,8 @@ import (
 
 var (
 	// conexão do banco
-	StringConexaoBanco = ""
+	StringConexaoBanco     = ""
+	StringConexaoBancoTest = ""
 	// Porta da API rodando
 	Porta = 0
 )
