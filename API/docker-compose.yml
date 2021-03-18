@@ -1,4 +1,4 @@
-version: '3.7'
+version: '2.1'
 services:
 
   db:
@@ -33,7 +33,7 @@ services:
     - "3000:3000"
     networks: 
     - dev-network
-    depends_on: 
+    depends_on:  
       rabbitmq:
         condition: service_healthy
       db:
